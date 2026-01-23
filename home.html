@@ -193,6 +193,12 @@
                 </svg>
                 Categorias
             </button>
+            <button onclick="refreshData()" class="btn-hover flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:shadow-2xl transition-all duration-200 font-medium shadow-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Atualizar
+            </button>
         </div>
     </div>
 
@@ -290,30 +296,84 @@
     </div>
 
     <script>
-        const ADMIN_PASS = 'user195705'; // Altere aqui!
+        const ADMIN_PASS = 'user195705';
         let isAdmin = false;
         let viewMode = 'grid';
         let selectedCategory = 'all';
         let editingId = null;
         let books = [];
         let categories = ['Ficção', 'Não-Ficção', 'Técnico', 'Biografia', 'Romance'];
+        let isLoading = false;
 
-        // Carregar dados
-        function loadData() {
-            const savedBooks = localStorage.getItem('paginasinfinitas_books');
-            const savedCategories = localStorage.getItem('paginasinfinitas_categories');
+        // Verificar se window.storage está disponível (Claude Artifacts)
+        const hasClaudeStorage = typeof window.storage !== 'undefined';
+
+        // Sistema de sincronização cross-device
+        async function loadData() {
+            if (isLoading) return;
+            isLoading = true;
             
-            if (savedBooks) books = JSON.parse(savedBooks);
-            if (savedCategories) categories = JSON.parse(savedCategories);
+            try {
+                if (hasClaudeStorage) {
+                    // Usar Claude Storage - SINCRONIZA ENTRE DISPOSITIVOS
+                    console.log('📱 Usando Claude Storage (sincroniza entre dispositivos)');
+                    try {
+                        const booksData = await window.storage.get('paginasinfinitas_books', true);
+                        const catsData = await window.storage.get('paginasinfinitas_categories', true);
+                        
+                        if (booksData && booksData.value) {
+                            books = JSON.parse(booksData.value);
+                            console.log('✅ Livros carregados:', books.length);
+                        }
+                        if (catsData && catsData.value) {
+                            categories = JSON.parse(catsData.value);
+                            console.log('✅ Categorias carregadas:', categories.length);
+                        }
+                    } catch (e) {
+                        console.log('ℹ️ Primeira vez - criando dados iniciais');
+                    }
+                } else {
+                    // Fallback localStorage - NÃO sincroniza entre dispositivos
+                    console.warn('⚠️ Claude Storage não disponível - usando localStorage (sem sincronização)');
+                    const savedBooks = localStorage.getItem('paginasinfinitas_books');
+                    const savedCategories = localStorage.getItem('paginasinfinitas_categories');
+                    
+                    if (savedBooks) books = JSON.parse(savedBooks);
+                    if (savedCategories) categories = JSON.parse(savedCategories);
+                }
+            } catch (error) {
+                console.error('❌ Erro ao carregar dados:', error);
+            }
             
+            isLoading = false;
             renderBooks();
             renderCategories();
         }
 
-        // Salvar dados
-        function saveData() {
-            localStorage.setItem('paginasinfinitas_books', JSON.stringify(books));
-            localStorage.setItem('paginasinfinitas_categories', JSON.stringify(categories));
+        async function saveData() {
+            try {
+                if (hasClaudeStorage) {
+                    // Claude Storage - SINCRONIZA AUTOMATICAMENTE
+                    console.log('💾 Salvando com sincronização cross-device...');
+                    const result1 = await window.storage.set('paginasinfinitas_books', JSON.stringify(books), true);
+                    const result2 = await window.storage.set('paginasinfinitas_categories', JSON.stringify(categories), true);
+                    console.log('✅ Dados sincronizados!');
+                } else {
+                    // Fallback localStorage
+                    localStorage.setItem('paginasinfinitas_books', JSON.stringify(books));
+                    localStorage.setItem('paginasinfinitas_categories', JSON.stringify(categories));
+                }
+            } catch (error) {
+                console.error('❌ Erro ao salvar:', error);
+                alert('Erro ao salvar dados. Verifique o console.');
+            }
+        }
+
+        // Função para forçar atualização
+        async function refreshData() {
+            console.log('🔄 Atualizando dados...');
+            await loadData();
+            alert('Dados atualizados com sucesso!');
         }
 
         // Dark Mode
@@ -427,7 +487,7 @@
             `).join('');
         }
 
-        function addCategory() {
+        async function addCategory() {
             const input = document.getElementById('newCategory');
             const cat = input.value.trim();
             if (!cat) {
@@ -439,20 +499,19 @@
                 return;
             }
             categories.push(cat);
-            saveData();
+            await saveData();
             renderCategoriesList();
             renderCategories();
             input.value = '';
         }
 
-        function deleteCategory(index, catName) {
+        async function deleteCategory(index, catName) {
             if (!confirm(`Tem certeza que deseja excluir a categoria "${catName}"?`)) {
                 return;
             }
             
             categories.splice(index, 1);
             
-            // Remover categoria dos livros
             books = books.map(book => {
                 if (book.category === catName) {
                     return {...book, category: ''};
@@ -464,7 +523,7 @@
                 selectedCategory = 'all';
             }
             
-            saveData();
+            await saveData();
             renderCategoriesList();
             renderCategories();
             renderBooks();
@@ -587,7 +646,7 @@
             document.getElementById('bookModal').classList.remove('hidden');
         }
 
-        function saveBook() {
+        async function saveBook() {
             const title = document.getElementById('bookTitle').value.trim();
             const author = document.getElementById('bookAuthor').value.trim();
             const link = document.getElementById('bookLink').value.trim();
@@ -614,15 +673,15 @@
                 books.push(book);
             }
 
-            saveData();
+            await saveData();
             closeBookModal();
             renderBooks();
         }
 
-        function deleteBook(id) {
+        async function deleteBook(id) {
             if (confirm('Tem certeza que deseja excluir este livro?')) {
                 books = books.filter(b => b.id !== id);
-                saveData();
+                await saveData();
                 renderBooks();
             }
         }
@@ -671,7 +730,7 @@
                 id: Date.now(),
                 title: "Exemplo: A Arte da Guerra",
                 author: "Sun Tzu",
-                description: "Um clássico milenar sobre estratégia e táticas militares, amplamente aplicado nos negócios modernos.\n\nEntre como admin (senha: admin123) para adicionar seus próprios livros e gerenciar categorias!",
+                description: "Um clássico milenar sobre estratégia e táticas militares, amplamente aplicado nos negócios modernos.\n\n✨ SINCRONIZAÇÃO ATIVADA!\nAgora as atualizações aparecem automaticamente em todos os dispositivos que acessam este link.\n\nEntre como admin (senha: user195705) para adicionar seus próprios livros!",
                 price: "29.90",
                 image: "https://m.media-amazon.com/images/I/61h7Y-shOZL._SL1303_.jpg",
                 category: "Não-Ficção",
