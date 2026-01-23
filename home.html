@@ -118,6 +118,7 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
+        /* Indicador de sincronização - oculto por padrão */
         .sync-indicator {
             position: fixed;
             top: 90px;
@@ -127,10 +128,15 @@
             border-radius: 12px;
             font-size: 14px;
             font-weight: 500;
-            display: flex;
+            display: none; /* ✅ Oculto por padrão */
             align-items: center;
             gap: 8px;
             transition: all 0.3s ease;
+            opacity: 0;
+        }
+        .sync-indicator.show {
+            display: flex;
+            opacity: 1;
         }
         .sync-indicator.syncing {
             background: rgba(59, 130, 246, 0.9);
@@ -359,11 +365,11 @@
             isFirebaseReady = true;
             console.log('🔥 Firebase conectado com sucesso!');
             console.log('📍 Database URL:', firebaseConfig.databaseURL);
-            showSyncStatus('synced', 'Sincronizado');
+            showSyncStatus('synced', 'Sincronizado', 3000); // ✅ Esconde após 3 segundos
         } catch (error) {
             console.error('❌ Erro ao conectar Firebase:', error);
             console.error('📋 Detalhes do erro:', error.message);
-            showSyncStatus('error', 'Erro: ' + error.message);
+            showSyncStatus('error', 'Erro: ' + error.message, 5000); // ✅ Esconde após 5 segundos
             isFirebaseReady = false;
             alert('⚠️ Erro ao conectar Firebase. Verifique as credenciais no código e as regras de segurança no Firebase Console.');
         }
@@ -467,13 +473,17 @@
             const indicator = document.getElementById('syncIndicator');
             const syncText = document.getElementById('syncText');
             
-            indicator.className = `sync-indicator ${status}`;
+            if (!indicator || !syncText) return; // Proteção
+            
+            indicator.className = `sync-indicator show ${status}`;
             syncText.textContent = text;
-            indicator.style.display = 'flex';
 
             if (hideAfter > 0) {
                 setTimeout(() => {
-                    indicator.style.display = 'none';
+                    indicator.classList.remove('show');
+                    setTimeout(() => {
+                        indicator.style.display = 'none';
+                    }, 300); // Aguarda animação
                 }, hideAfter);
             }
         }
@@ -481,8 +491,8 @@
 
     <script>
         // ✅ CORREÇÃO #1: SENHA PROTEGIDA COM HASH SHA-256
-        // Hash da senha 'user195705'
-        const ADMIN_PASS_HASH = 'f7f2f3e4d5c6b7a8e9d0c1b2a3948576f8c3a4f58ec42bd4c5b5d0e99aa6c3a1';
+        // Hash correto da senha 'user195705'
+        const ADMIN_PASS_HASH = '9d493195601b65ec63ea7486cd6b723f7601983e0240a72535138fa274f437d6';
         let isAdmin = false;
         let viewMode = 'grid';
         let selectedCategory = 'all';
