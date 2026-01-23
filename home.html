@@ -493,17 +493,29 @@
                         window.firebaseDB.loadCategories()
                     ]);
 
-                    if (loadedBooks) books = loadedBooks;
-                    if (loadedCategories) categories = loadedCategories;
+                    console.log('📦 Dados recebidos do Firebase:', {
+                        books: loadedBooks ? loadedBooks.length : 0,
+                        categories: loadedCategories ? loadedCategories.length : 0
+                    });
 
-                    console.log('✅ Dados carregados:', books.length, 'livros');
+                    if (loadedBooks) {
+                        books = loadedBooks;
+                        console.log('✅ Livros carregados:', books.length);
+                    } else {
+                        console.log('ℹ️ Nenhum livro encontrado no Firebase');
+                    }
+                    
+                    if (loadedCategories) {
+                        categories = loadedCategories;
+                        console.log('✅ Categorias carregadas:', categories.length);
+                    }
 
                     // Escutar mudanças em tempo real
                     window.firebaseDB.listenToBooks((newBooks) => {
                         if (JSON.stringify(books) !== JSON.stringify(newBooks)) {
                             books = newBooks;
                             renderBooks();
-                            console.log('🔄 Livros atualizados em tempo real');
+                            console.log('🔄 Livros atualizados em tempo real:', books.length);
                         }
                     });
 
@@ -897,9 +909,13 @@
         }
 
         // Inicializar
-        setTimeout(() => {
-            loadData();
+        // Inicializar - AGUARDAR Firebase carregar primeiro
+        async function initialize() {
+            await loadData(); // Aguarda carregar do Firebase
+            
+            // Só cria dados padrão se realmente não existir nada
             if (books.length === 0) {
+                console.log('ℹ️ Nenhum dado encontrado. Criando livro de exemplo...');
                 books = [{
                     id: Date.now(),
                     title: "A Arte da Guerra",
@@ -910,9 +926,13 @@
                     category: "Não-Ficção",
                     affiliateLink: "https://amazon.com.br"
                 }];
-                saveData();
+                await saveData(); // Salva no Firebase
+                renderBooks(); // Renderiza
             }
-        }, 500);
+        }
+        
+        // Chamar inicialização
+        initialize();
     </script>
 </body>
 </html>
