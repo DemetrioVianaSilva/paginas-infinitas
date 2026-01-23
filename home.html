@@ -13,8 +13,7 @@
                     animation: {
                         'fade-in': 'fadeIn 0.3s ease-in-out',
                         'slide-up': 'slideUp 0.3s ease-out',
-                        'scale-in': 'scaleIn 0.2s ease-out',
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                        'scale-in': 'scaleIn 0.2s ease-out'
                     },
                     keyframes: {
                         fadeIn: {
@@ -108,47 +107,10 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        .sync-indicator {
-            position: fixed;
-            top: 90px;
-            right: 20px;
-            z-index: 40;
-            padding: 8px 16px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-        }
-        .sync-indicator.syncing {
-            background: rgba(59, 130, 246, 0.9);
-            color: white;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
-        .sync-indicator.synced {
-            background: rgba(34, 197, 94, 0.9);
-            color: white;
-            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
-        }
-        .sync-indicator.error {
-            background: rgba(239, 68, 68, 0.9);
-            color: white;
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-        }
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 transition-all duration-300">
     
-    <!-- Indicador de Sincronização -->
-    <div id="syncIndicator" class="sync-indicator syncing" style="display: none;">
-        <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-        </svg>
-        <span id="syncText">Conectando...</span>
-    </div>
-
     <!-- Header com Glass Effect -->
     <header class="glass-effect dark:glass-effect-dark sticky top-0 z-50 border-b border-gray-200 dark:border-gray-700 shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -231,6 +193,12 @@
                 </svg>
                 Categorias
             </button>
+            <button onclick="refreshData()" class="btn-hover flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:shadow-2xl transition-all duration-200 font-medium shadow-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Atualizar
+            </button>
         </div>
     </div>
 
@@ -251,7 +219,7 @@
         </div>
     </footer>
 
-    <!-- Modals (Admin, Category, Book, Detail) -->
+    <!-- Modal Login Admin -->
     <div id="adminModal" class="hidden fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 modal-enter">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl animate-scale-in">
             <div class="text-center mb-6">
@@ -271,9 +239,11 @@
             <button onclick="document.getElementById('adminModal').classList.add('hidden')" class="w-full text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors py-2">
                 Cancelar
             </button>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">Senha padrão: admin123</p>
         </div>
     </div>
 
+    <!-- Modal Gerenciar Categorias -->
     <div id="categoryModal" class="hidden fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 modal-enter">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-2xl max-h-[80vh] overflow-y-auto animate-scale-in">
             <div class="flex justify-between items-center mb-6">
@@ -296,6 +266,7 @@
         </div>
     </div>
 
+    <!-- Modal Livro -->
     <div id="bookModal" class="hidden fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto modal-enter">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-2xl w-full my-8 shadow-2xl animate-scale-in">
             <div class="flex justify-between items-center mb-6">
@@ -319,156 +290,10 @@
         </div>
     </div>
 
+    <!-- Modal Detalhes -->
     <div id="detailModal" class="hidden fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto modal-enter">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-2xl w-full my-8 shadow-2xl animate-scale-in" id="detailContent"></div>
     </div>
-
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, set, get, onValue, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-
-        // ⚠️ IMPORTANTE: Substitua com suas credenciais do Firebase
-        // Tutorial completo no arquivo SETUP_FIREBASE.md
-        const firebaseConfig = {
-            apiKey: "SUA_API_KEY_AQUI",
-            authDomain: "seu-projeto.firebaseapp.com",
-            databaseURL: "https://seu-projeto-default-rtdb.firebaseio.com",
-            projectId: "seu-projeto",
-            storageBucket: "seu-projeto.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abc123"
-        };
-
-        // Inicializar Firebase
-        let app, database;
-        let isFirebaseReady = false;
-
-        try {
-            app = initializeApp(firebaseConfig);
-            database = getDatabase(app);
-            isFirebaseReady = true;
-            console.log('🔥 Firebase conectado com sucesso!');
-            console.log('📍 Database URL:', firebaseConfig.databaseURL);
-            showSyncStatus('synced', 'Sincronizado');
-        } catch (error) {
-            console.error('❌ Erro ao conectar Firebase:', error);
-            console.error('📋 Detalhes do erro:', error.message);
-            showSyncStatus('error', 'Erro: ' + error.message);
-            isFirebaseReady = false;
-            alert('⚠️ Erro ao conectar Firebase. Verifique as credenciais no código e as regras de segurança no Firebase Console.');
-        }
-
-        // Expor funções globalmente
-        window.firebaseDB = {
-            isReady: () => isFirebaseReady,
-            
-            async saveBooks(books) {
-                if (!isFirebaseReady) {
-                    console.warn('⚠️ Firebase não está pronto. Usando localStorage como fallback.');
-                    localStorage.setItem('paginasinfinitas_books', JSON.stringify(books));
-                    return false;
-                }
-                try {
-                    showSyncStatus('syncing', 'Sincronizando...');
-                    await set(ref(database, 'books'), books);
-                    console.log('✅ Livros salvos no Firebase:', books.length, 'livros');
-                    showSyncStatus('synced', 'Sincronizado', 2000);
-                    return true;
-                } catch (error) {
-                    console.error('❌ Erro ao salvar livros:', error);
-                    console.error('📋 Detalhes:', error.message);
-                    if (error.code === 'PERMISSION_DENIED') {
-                        alert('🚨 PERMISSÃO NEGADA!\n\nAs regras do Firebase expiraram ou estão bloqueando escritas.\n\nSOLUÇÃO:\n1. Acesse: https://console.firebase.google.com\n2. Vá em Realtime Database → Regras\n3. Atualize as regras conforme o guia CORRECAO_URGENTE_FIREBASE.md');
-                    }
-                    showSyncStatus('error', 'Erro: ' + error.code);
-                    // Fallback para localStorage
-                    localStorage.setItem('paginasinfinitas_books', JSON.stringify(books));
-                    return false;
-                }
-            },
-
-            async saveCategories(categories) {
-                if (!isFirebaseReady) {
-                    console.warn('⚠️ Firebase não está pronto. Usando localStorage como fallback.');
-                    localStorage.setItem('paginasinfinitas_categories', JSON.stringify(categories));
-                    return false;
-                }
-                try {
-                    showSyncStatus('syncing', 'Sincronizando...');
-                    await set(ref(database, 'categories'), categories);
-                    console.log('✅ Categorias salvas no Firebase:', categories.length, 'categorias');
-                    showSyncStatus('synced', 'Sincronizado', 2000);
-                    return true;
-                } catch (error) {
-                    console.error('❌ Erro ao salvar categorias:', error);
-                    console.error('📋 Detalhes:', error.message);
-                    if (error.code === 'PERMISSION_DENIED') {
-                        alert('🚨 PERMISSÃO NEGADA!\n\nAs regras do Firebase expiraram ou estão bloqueando escritas.\n\nSOLUÇÃO:\n1. Acesse: https://console.firebase.google.com\n2. Vá em Realtime Database → Regras\n3. Atualize as regras conforme o guia CORRECAO_URGENTE_FIREBASE.md');
-                    }
-                    showSyncStatus('error', 'Erro: ' + error.code);
-                    // Fallback para localStorage
-                    localStorage.setItem('paginasinfinitas_categories', JSON.stringify(categories));
-                    return false;
-                }
-            },
-
-            async loadBooks() {
-                if (!isFirebaseReady) return null;
-                try {
-                    const snapshot = await get(ref(database, 'books'));
-                    return snapshot.exists() ? snapshot.val() : null;
-                } catch (error) {
-                    console.error('Erro ao carregar livros:', error);
-                    return null;
-                }
-            },
-
-            async loadCategories() {
-                if (!isFirebaseReady) return null;
-                try {
-                    const snapshot = await get(ref(database, 'categories'));
-                    return snapshot.exists() ? snapshot.val() : null;
-                } catch (error) {
-                    console.error('Erro ao carregar categorias:', error);
-                    return null;
-                }
-            },
-
-            listenToBooks(callback) {
-                if (!isFirebaseReady) return;
-                onValue(ref(database, 'books'), (snapshot) => {
-                    if (snapshot.exists()) {
-                        callback(snapshot.val());
-                    }
-                });
-            },
-
-            listenToCategories(callback) {
-                if (!isFirebaseReady) return;
-                onValue(ref(database, 'categories'), (snapshot) => {
-                    if (snapshot.exists()) {
-                        callback(snapshot.val());
-                    }
-                });
-            }
-        };
-
-        function showSyncStatus(status, text, hideAfter = 0) {
-            const indicator = document.getElementById('syncIndicator');
-            const syncText = document.getElementById('syncText');
-            
-            indicator.className = `sync-indicator ${status}`;
-            syncText.textContent = text;
-            indicator.style.display = 'flex';
-
-            if (hideAfter > 0) {
-                setTimeout(() => {
-                    indicator.style.display = 'none';
-                }, hideAfter);
-            }
-        }
-    </script>
 
     <script>
         const ADMIN_PASS = 'user195705';
@@ -480,43 +305,36 @@
         let categories = ['Ficção', 'Não-Ficção', 'Técnico', 'Biografia', 'Romance'];
         let isLoading = false;
 
-        // Carregar dados do Firebase
+        // Verificar se window.storage está disponível (Claude Artifacts)
+        const hasClaudeStorage = typeof window.storage !== 'undefined';
+
+        // Sistema de sincronização cross-device
         async function loadData() {
             if (isLoading) return;
             isLoading = true;
-
+            
             try {
-                if (window.firebaseDB && window.firebaseDB.isReady()) {
-                    console.log('📚 Carregando do Firebase...');
-                    
-                    const [loadedBooks, loadedCategories] = await Promise.all([
-                        window.firebaseDB.loadBooks(),
-                        window.firebaseDB.loadCategories()
-                    ]);
-
-                    if (loadedBooks) books = loadedBooks;
-                    if (loadedCategories) categories = loadedCategories;
-
-                    console.log('✅ Dados carregados:', books.length, 'livros');
-
-                    // Escutar mudanças em tempo real
-                    window.firebaseDB.listenToBooks((newBooks) => {
-                        if (JSON.stringify(books) !== JSON.stringify(newBooks)) {
-                            books = newBooks;
-                            renderBooks();
-                            console.log('🔄 Livros atualizados em tempo real');
+                if (hasClaudeStorage) {
+                    // Usar Claude Storage - SINCRONIZA ENTRE DISPOSITIVOS
+                    console.log('📱 Usando Claude Storage (sincroniza entre dispositivos)');
+                    try {
+                        const booksData = await window.storage.get('paginasinfinitas_books', true);
+                        const catsData = await window.storage.get('paginasinfinitas_categories', true);
+                        
+                        if (booksData && booksData.value) {
+                            books = JSON.parse(booksData.value);
+                            console.log('✅ Livros carregados:', books.length);
                         }
-                    });
-
-                    window.firebaseDB.listenToCategories((newCategories) => {
-                        if (JSON.stringify(categories) !== JSON.stringify(newCategories)) {
-                            categories = newCategories;
-                            renderCategories();
-                            console.log('🔄 Categorias atualizadas em tempo real');
+                        if (catsData && catsData.value) {
+                            categories = JSON.parse(catsData.value);
+                            console.log('✅ Categorias carregadas:', categories.length);
                         }
-                    });
+                    } catch (e) {
+                        console.log('ℹ️ Primeira vez - criando dados iniciais');
+                    }
                 } else {
-                    console.warn('⚠️ Firebase não disponível - usando fallback localStorage');
+                    // Fallback localStorage - NÃO sincroniza entre dispositivos
+                    console.warn('⚠️ Claude Storage não disponível - usando localStorage (sem sincronização)');
                     const savedBooks = localStorage.getItem('paginasinfinitas_books');
                     const savedCategories = localStorage.getItem('paginasinfinitas_categories');
                     
@@ -526,31 +344,36 @@
             } catch (error) {
                 console.error('❌ Erro ao carregar dados:', error);
             }
-
+            
             isLoading = false;
             renderBooks();
             renderCategories();
         }
 
-        // Salvar dados no Firebase
         async function saveData() {
             try {
-                if (window.firebaseDB && window.firebaseDB.isReady()) {
-                    console.log('💾 Salvando no Firebase...');
-                    await Promise.all([
-                        window.firebaseDB.saveBooks(books),
-                        window.firebaseDB.saveCategories(categories)
-                    ]);
+                if (hasClaudeStorage) {
+                    // Claude Storage - SINCRONIZA AUTOMATICAMENTE
+                    console.log('💾 Salvando com sincronização cross-device...');
+                    const result1 = await window.storage.set('paginasinfinitas_books', JSON.stringify(books), true);
+                    const result2 = await window.storage.set('paginasinfinitas_categories', JSON.stringify(categories), true);
                     console.log('✅ Dados sincronizados!');
                 } else {
-                    // Fallback para localStorage
+                    // Fallback localStorage
                     localStorage.setItem('paginasinfinitas_books', JSON.stringify(books));
                     localStorage.setItem('paginasinfinitas_categories', JSON.stringify(categories));
                 }
             } catch (error) {
                 console.error('❌ Erro ao salvar:', error);
-                alert('Erro ao salvar dados. Tente novamente.');
+                alert('Erro ao salvar dados. Verifique o console.');
             }
+        }
+
+        // Função para forçar atualização
+        async function refreshData() {
+            console.log('🔄 Atualizando dados...');
+            await loadData();
+            alert('Dados atualizados com sucesso!');
         }
 
         // Dark Mode
@@ -559,6 +382,7 @@
             localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
         }
 
+        // Verificar preferência de dark mode
         if (localStorage.getItem('darkMode') === 'true') {
             document.documentElement.classList.add('dark');
         }
@@ -632,6 +456,7 @@
             filterBooks();
         }
 
+        // Modal Categorias
         function openCategoryModal() {
             renderCategoriesList();
             document.getElementById('categoryModal').classList.remove('hidden');
@@ -686,6 +511,7 @@
             }
             
             categories.splice(index, 1);
+            
             books = books.map(book => {
                 if (book.category === catName) {
                     return {...book, category: ''};
@@ -898,22 +724,21 @@
         }
 
         // Inicializar
-        setTimeout(() => {
-            loadData();
-            if (books.length === 0) {
-                books = [{
-                    id: Date.now(),
-                    title: "A Arte da Guerra",
-                    author: "Sun Tzu",
-                    description: "Um clássico milenar sobre estratégia e táticas militares.\n\n🔥 SINCRONIZAÇÃO FIREBASE ATIVA!\nTodas as mudanças aparecem instantaneamente em todos os dispositivos.\n\nFaça login como admin (senha: user195705) para gerenciar os livros!",
-                    price: "29.90",
-                    image: "https://m.media-amazon.com/images/I/61h7Y-shOZL._SL1303_.jpg",
-                    category: "Não-Ficção",
-                    affiliateLink: "https://amazon.com.br"
-                }];
-                saveData();
-            }
-        }, 500);
+        loadData();
+        if (books.length === 0) {
+            books = [{
+                id: Date.now(),
+                title: "Exemplo: A Arte da Guerra",
+                author: "Sun Tzu",
+                description: "Um clássico milenar sobre estratégia e táticas militares, amplamente aplicado nos negócios modernos.\n\n✨ SINCRONIZAÇÃO ATIVADA!\nAgora as atualizações aparecem automaticamente em todos os dispositivos que acessam este link.\n\nEntre como admin (senha: user195705) para adicionar seus próprios livros!",
+                price: "29.90",
+                image: "https://m.media-amazon.com/images/I/61h7Y-shOZL._SL1303_.jpg",
+                category: "Não-Ficção",
+                affiliateLink: "https://amazon.com.br"
+            }];
+            saveData();
+            renderBooks();
+        }
     </script>
 </body>
 </html>
