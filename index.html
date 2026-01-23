@@ -1,0 +1,621 @@
+import React, { useState, useEffect } from 'react';
+import { Book, Plus, Edit2, Trash2, X, Save, Settings, LogOut, LogIn, Grid, List, Moon, Sun, Search } from 'lucide-react';
+
+export default function BookstoreAffiliate() {
+  const [books, setBooks] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [showBookModal, setShowBookModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showBookDetail, setShowBookDetail] = useState(null);
+  const [editingBook, setEditingBook] = useState(null);
+  const [viewMode, setViewMode] = useState('grid');
+  const [darkMode, setDarkMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const ADMIN_PASS = 'admin123'; // Altere esta senha!
+
+  const [bookForm, setBookForm] = useState({
+    title: '',
+    author: '',
+    description: '',
+    price: '',
+    image: '',
+    category: '',
+    affiliateLink: ''
+  });
+
+  const [newCategory, setNewCategory] = useState('');
+
+  // Carregar dados do storage ao iniciar
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const booksResult = await window.storage.get('books');
+      const categoriesResult = await window.storage.get('categories');
+      
+      if (booksResult) {
+        setBooks(JSON.parse(booksResult.value));
+      }
+      if (categoriesResult) {
+        setCategories(JSON.parse(categoriesResult.value));
+      }
+    } catch (error) {
+      console.log('Iniciando com dados vazios');
+    }
+  };
+
+  const saveBooks = async (newBooks) => {
+    try {
+      await window.storage.set('books', JSON.stringify(newBooks));
+      setBooks(newBooks);
+    } catch (error) {
+      console.error('Erro ao salvar livros:', error);
+    }
+  };
+
+  const saveCategories = async (newCategories) => {
+    try {
+      await window.storage.set('categories', JSON.stringify(newCategories));
+      setCategories(newCategories);
+    } catch (error) {
+      console.error('Erro ao salvar categorias:', error);
+    }
+  };
+
+  const handleAdminLogin = () => {
+    if (adminPassword === ADMIN_PASS) {
+      setIsAdmin(true);
+      setShowAdminModal(false);
+      setAdminPassword('');
+    } else {
+      alert('Senha incorreta!');
+    }
+  };
+
+  const handleAddCategory = () => {
+    if (newCategory.trim()) {
+      const updated = [...categories, newCategory.trim()];
+      saveCategories(updated);
+      setNewCategory('');
+      setShowCategoryModal(false);
+    }
+  };
+
+  const handleDeleteCategory = (cat) => {
+    if (confirm(`Excluir categoria "${cat}"?`)) {
+      const updated = categories.filter(c => c !== cat);
+      saveCategories(updated);
+    }
+  };
+
+  const handleSaveBook = () => {
+    if (!bookForm.title || !bookForm.author || !bookForm.affiliateLink) {
+      alert('Preencha pelo menos título, autor e link de afiliado!');
+      return;
+    }
+
+    if (editingBook) {
+      const updated = books.map(b => b.id === editingBook.id ? { ...bookForm, id: b.id } : b);
+      saveBooks(updated);
+    } else {
+      const newBook = { ...bookForm, id: Date.now() };
+      saveBooks([...books, newBook]);
+    }
+
+    setShowBookModal(false);
+    setEditingBook(null);
+    setBookForm({
+      title: '',
+      author: '',
+      description: '',
+      price: '',
+      image: '',
+      category: '',
+      affiliateLink: ''
+    });
+  };
+
+  const handleEditBook = (book) => {
+    setEditingBook(book);
+    setBookForm(book);
+    setShowBookModal(true);
+  };
+
+  const handleDeleteBook = (id) => {
+    if (confirm('Excluir este livro?')) {
+      const updated = books.filter(b => b.id !== id);
+      saveBooks(updated);
+    }
+  };
+
+  const filteredBooks = books.filter(book => {
+    const matchesCategory = selectedCategory === 'all' || book.category === selectedCategory;
+    const matchesSearch = searchQuery === '' || 
+      book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (book.description && book.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesCategory && matchesSearch;
+  });
+
+  return (
+    <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      {/* Header */}
+      <header className={`${darkMode ? 'bg-gray-800 shadow-gray-900' : 'bg-white'} shadow-sm sticky top-0 z-40`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Book className={`w-8 h-8 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+              <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Páginas Infinitas</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className={`p-2 rounded-lg transition ${
+                  darkMode ? 'bg-gray-700 text-yellow-400 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+              <button
+                onClick={() => isAdmin ? setIsAdmin(false) : setShowAdminModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              >
+                {isAdmin ? <LogOut className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
+                {isAdmin ? 'Sair' : 'Admin'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Barra de Pesquisa */}
+      <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="relative">
+            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+            <input
+              type="text"
+              placeholder="Buscar por título, autor ou descrição..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
+                darkMode 
+                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Filtros e Controles */}
+      <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} border-b sticky top-16 z-30`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className={`px-4 py-2 rounded-full transition ${
+                  selectedCategory === 'all'
+                    ? 'bg-blue-600 text-white'
+                    : darkMode 
+                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Todos
+              </button>
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-4 py-2 rounded-full transition ${
+                    selectedCategory === cat
+                      ? 'bg-blue-600 text-white'
+                      : darkMode 
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+              {isAdmin && (
+                <button
+                  onClick={() => setShowCategoryModal(true)}
+                  className="px-4 py-2 bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition"
+                >
+                  + Categoria
+                </button>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded transition ${
+                  viewMode === 'grid' 
+                    ? 'bg-blue-100 text-blue-600' 
+                    : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
+                }`}
+              >
+                <Grid className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded transition ${
+                  viewMode === 'list' 
+                    ? 'bg-blue-100 text-blue-600' 
+                    : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
+                }`}
+              >
+                <List className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Botão Adicionar (Admin) */}
+      {isAdmin && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <button
+            onClick={() => {
+              setEditingBook(null);
+              setBookForm({
+                title: '',
+                author: '',
+                description: '',
+                price: '',
+                image: '',
+                category: '',
+                affiliateLink: ''
+              });
+              setShowBookModal(true);
+            }}
+            className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+          >
+            <Plus className="w-5 h-5" />
+            Adicionar Livro
+          </button>
+        </div>
+      )}
+
+      {/* Lista de Livros */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {filteredBooks.length === 0 ? (
+          <div className="text-center py-16">
+            <Book className={`w-16 h-16 ${darkMode ? 'text-gray-600' : 'text-gray-300'} mx-auto mb-4`} />
+            <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'} text-lg`}>
+              {searchQuery ? 'Nenhum livro encontrado com essa busca' : 'Nenhum livro encontrado'}
+            </p>
+            {isAdmin && !searchQuery && (
+              <p className={`${darkMode ? 'text-gray-500' : 'text-gray-400'} mt-2`}>Adicione seu primeiro livro!</p>
+            )}
+          </div>
+        ) : (
+          <div className={viewMode === 'grid' 
+            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+            : 'space-y-4'
+          }>
+            {filteredBooks.map(book => (
+              <div
+                key={book.id}
+                onClick={() => setShowBookDetail(book)}
+                className={`${
+                  darkMode ? 'bg-gray-800 hover:bg-gray-750' : 'bg-white'
+                } rounded-xl shadow-sm hover:shadow-md transition overflow-hidden cursor-pointer ${
+                  viewMode === 'list' ? 'flex gap-4 p-4' : ''
+                }`}
+              >
+                {book.image && (
+                  <img
+                    src={book.image}
+                    alt={book.title}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="300" viewBox="0 0 200 300"%3E%3Crect fill="%23ddd" width="200" height="300"/%3E%3Ctext x="50%25" y="50%25" font-size="18" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3ESem Imagem%3C/text%3E%3C/svg%3E';
+                    }}
+                    className={viewMode === 'list' 
+                      ? 'w-24 h-32 object-cover rounded flex-shrink-0'
+                      : 'w-full h-64 object-cover'
+                    }
+                  />
+                )}
+                <div className={viewMode === 'grid' ? 'p-4' : 'flex-1'} onClick={(e) => e.stopPropagation()}>
+                  <h3 className={`font-bold text-lg ${darkMode ? 'text-white' : 'text-gray-900'} mb-1 line-clamp-2`}>
+                    {book.title}
+                  </h3>
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-2`}>{book.author}</p>
+                  {book.description && (
+                    <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'} mb-3 line-clamp-3`}>
+                      {book.description}
+                    </p>
+                  )}
+                  {book.category && (
+                    <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full mb-3">
+                      {book.category}
+                    </span>
+                  )}
+                  {book.price && (
+                    <p className="text-xl font-bold text-green-600 mb-3">
+                      R$ {book.price}
+                    </p>
+                  )}
+                  <div className="flex gap-2">
+                    <a
+                      href={book.affiliateLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex-1 bg-orange-500 text-white text-center py-2 px-4 rounded-lg hover:bg-orange-600 transition font-medium"
+                    >
+                      Comprar na Amazon
+                    </a>
+                    {isAdmin && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditBook(book);
+                          }}
+                          className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteBook(book.id);
+                          }}
+                          className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} border-t mt-16`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className={`text-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            <p className="mb-2">
+              <strong>Aviso:</strong> Este site participa do Programa de Associados da Amazon, um programa de publicidade de afiliados criado para proporcionar aos sites um meio de obter receitas através da criação de links para a Amazon.
+            </p>
+            <p>Como Associado da Amazon, ganho com compras qualificadas.</p>
+          </div>
+        </div>
+      </footer>
+
+      {/* Modal Detalhes do Livro */}
+      {showBookDetail && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 max-w-2xl w-full my-8`}>
+            <div className="flex justify-between items-start mb-4">
+              <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} pr-4`}>
+                {showBookDetail.title}
+              </h2>
+              <button onClick={() => setShowBookDetail(null)} className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {showBookDetail.image && (
+              <img
+                src={showBookDetail.image}
+                alt={showBookDetail.title}
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="300" viewBox="0 0 200 300"%3E%3Crect fill="%23ddd" width="200" height="300"/%3E%3Ctext x="50%25" y="50%25" font-size="18" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3ESem Imagem%3C/text%3E%3C/svg%3E';
+                }}
+                className="w-full max-h-96 object-contain rounded-lg mb-4"
+              />
+            )}
+
+            <p className={`text-lg ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+              <strong>Autor:</strong> {showBookDetail.author}
+            </p>
+
+            {showBookDetail.category && (
+              <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full mb-4">
+                {showBookDetail.category}
+              </span>
+            )}
+
+            {showBookDetail.description && (
+              <div className="mb-4">
+                <h3 className={`font-bold text-lg ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>Descrição</h3>
+                <p className={`${darkMode ? 'text-gray-300' : 'text-gray-700'} whitespace-pre-line`}>
+                  {showBookDetail.description}
+                </p>
+              </div>
+            )}
+
+            {showBookDetail.price && (
+              <p className="text-2xl font-bold text-green-600 mb-4">
+                R$ {showBookDetail.price}
+              </p>
+            )}
+
+            <a
+              href={showBookDetail.affiliateLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full bg-orange-500 text-white text-center py-3 px-4 rounded-lg hover:bg-orange-600 transition font-medium"
+            >
+              Comprar na Amazon
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Login Admin */}
+      {showAdminModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Acesso Administrativo</h2>
+              <button onClick={() => setShowAdminModal(false)}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <input
+              type="password"
+              placeholder="Senha"
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleAdminLogin()}
+              className="w-full px-4 py-2 border rounded-lg mb-4"
+            />
+            <button
+              onClick={handleAdminLogin}
+              className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+            >
+              Entrar
+            </button>
+            <p className="text-xs text-gray-500 mt-4">
+              Senha padrão: admin123 (altere no código!)
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Gerenciar Categorias */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full max-h-96 overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Gerenciar Categorias</h2>
+              <button onClick={() => setShowCategoryModal(false)}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Nova categoria"
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
+                  className="flex-1 px-4 py-2 border rounded-lg"
+                />
+                <button
+                  onClick={handleAddCategory}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {categories.map(cat => (
+                <div key={cat} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <span>{cat}</span>
+                  <button
+                    onClick={() => handleDeleteCategory(cat)}
+                    className="p-1 text-red-600 hover:bg-red-100 rounded"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Adicionar/Editar Livro */}
+      {showBookModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl p-6 max-w-2xl w-full my-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">
+                {editingBook ? 'Editar Livro' : 'Adicionar Livro'}
+              </h2>
+              <button onClick={() => setShowBookModal(false)}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="Título *"
+                value={bookForm.title}
+                onChange={(e) => setBookForm({...bookForm, title: e.target.value})}
+                className="w-full px-4 py-2 border rounded-lg"
+              />
+              <input
+                type="text"
+                placeholder="Autor *"
+                value={bookForm.author}
+                onChange={(e) => setBookForm({...bookForm, author: e.target.value})}
+                className="w-full px-4 py-2 border rounded-lg"
+              />
+              <textarea
+                placeholder="Descrição"
+                value={bookForm.description}
+                onChange={(e) => setBookForm({...bookForm, description: e.target.value})}
+                className="w-full px-4 py-2 border rounded-lg h-24 resize-none"
+              />
+              <input
+                type="text"
+                placeholder="Preço (ex: 29.90)"
+                value={bookForm.price}
+                onChange={(e) => setBookForm({...bookForm, price: e.target.value})}
+                className="w-full px-4 py-2 border rounded-lg"
+              />
+              <input
+                type="text"
+                placeholder="URL da Imagem"
+                value={bookForm.image}
+                onChange={(e) => setBookForm({...bookForm, image: e.target.value})}
+                className="w-full px-4 py-2 border rounded-lg"
+              />
+              <select
+                value={bookForm.category}
+                onChange={(e) => setBookForm({...bookForm, category: e.target.value})}
+                className="w-full px-4 py-2 border rounded-lg"
+              >
+                <option value="">Selecione uma categoria</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+              <input
+                type="text"
+                placeholder="Link de Afiliado da Amazon *"
+                value={bookForm.affiliateLink}
+                onChange={(e) => setBookForm({...bookForm, affiliateLink: e.target.value})}
+                className="w-full px-4 py-2 border rounded-lg"
+              />
+              <button
+                onClick={handleSaveBook}
+                className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition"
+              >
+                <Save className="w-5 h-5" />
+                Salvar Livro
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
