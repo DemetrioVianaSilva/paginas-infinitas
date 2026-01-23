@@ -1,621 +1,484 @@
-import React, { useState, useEffect } from 'react';
-import { Book, Plus, Edit2, Trash2, X, Save, Settings, LogOut, LogIn, Grid, List, Moon, Sun, Search } from 'lucide-react';
-
-export default function BookstoreAffiliate() {
-  const [books, setBooks] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [showAdminModal, setShowAdminModal] = useState(false);
-  const [showBookModal, setShowBookModal] = useState(false);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [showBookDetail, setShowBookDetail] = useState(null);
-  const [editingBook, setEditingBook] = useState(null);
-  const [viewMode, setViewMode] = useState('grid');
-  const [darkMode, setDarkMode] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
-  const ADMIN_PASS = 'admin123'; // Altere esta senha!
-
-  const [bookForm, setBookForm] = useState({
-    title: '',
-    author: '',
-    description: '',
-    price: '',
-    image: '',
-    category: '',
-    affiliateLink: ''
-  });
-
-  const [newCategory, setNewCategory] = useState('');
-
-  // Carregar dados do storage ao iniciar
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    try {
-      const booksResult = await window.storage.get('books');
-      const categoriesResult = await window.storage.get('categories');
-      
-      if (booksResult) {
-        setBooks(JSON.parse(booksResult.value));
-      }
-      if (categoriesResult) {
-        setCategories(JSON.parse(categoriesResult.value));
-      }
-    } catch (error) {
-      console.log('Iniciando com dados vazios');
-    }
-  };
-
-  const saveBooks = async (newBooks) => {
-    try {
-      await window.storage.set('books', JSON.stringify(newBooks));
-      setBooks(newBooks);
-    } catch (error) {
-      console.error('Erro ao salvar livros:', error);
-    }
-  };
-
-  const saveCategories = async (newCategories) => {
-    try {
-      await window.storage.set('categories', JSON.stringify(newCategories));
-      setCategories(newCategories);
-    } catch (error) {
-      console.error('Erro ao salvar categorias:', error);
-    }
-  };
-
-  const handleAdminLogin = () => {
-    if (adminPassword === ADMIN_PASS) {
-      setIsAdmin(true);
-      setShowAdminModal(false);
-      setAdminPassword('');
-    } else {
-      alert('Senha incorreta!');
-    }
-  };
-
-  const handleAddCategory = () => {
-    if (newCategory.trim()) {
-      const updated = [...categories, newCategory.trim()];
-      saveCategories(updated);
-      setNewCategory('');
-      setShowCategoryModal(false);
-    }
-  };
-
-  const handleDeleteCategory = (cat) => {
-    if (confirm(`Excluir categoria "${cat}"?`)) {
-      const updated = categories.filter(c => c !== cat);
-      saveCategories(updated);
-    }
-  };
-
-  const handleSaveBook = () => {
-    if (!bookForm.title || !bookForm.author || !bookForm.affiliateLink) {
-      alert('Preencha pelo menos título, autor e link de afiliado!');
-      return;
-    }
-
-    if (editingBook) {
-      const updated = books.map(b => b.id === editingBook.id ? { ...bookForm, id: b.id } : b);
-      saveBooks(updated);
-    } else {
-      const newBook = { ...bookForm, id: Date.now() };
-      saveBooks([...books, newBook]);
-    }
-
-    setShowBookModal(false);
-    setEditingBook(null);
-    setBookForm({
-      title: '',
-      author: '',
-      description: '',
-      price: '',
-      image: '',
-      category: '',
-      affiliateLink: ''
-    });
-  };
-
-  const handleEditBook = (book) => {
-    setEditingBook(book);
-    setBookForm(book);
-    setShowBookModal(true);
-  };
-
-  const handleDeleteBook = (id) => {
-    if (confirm('Excluir este livro?')) {
-      const updated = books.filter(b => b.id !== id);
-      saveBooks(updated);
-    }
-  };
-
-  const filteredBooks = books.filter(book => {
-    const matchesCategory = selectedCategory === 'all' || book.category === selectedCategory;
-    const matchesSearch = searchQuery === '' || 
-      book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (book.description && book.description.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesCategory && matchesSearch;
-  });
-
-  return (
-    <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      {/* Header */}
-      <header className={`${darkMode ? 'bg-gray-800 shadow-gray-900' : 'bg-white'} shadow-sm sticky top-0 z-40`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Book className={`w-8 h-8 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-              <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Páginas Infinitas</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                className={`p-2 rounded-lg transition ${
-                  darkMode ? 'bg-gray-700 text-yellow-400 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </button>
-              <button
-                onClick={() => isAdmin ? setIsAdmin(false) : setShowAdminModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-              >
-                {isAdmin ? <LogOut className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
-                {isAdmin ? 'Sair' : 'Admin'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Barra de Pesquisa */}
-      <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="relative">
-            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-            <input
-              type="text"
-              placeholder="Buscar por título, autor ou descrição..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Filtros e Controles */}
-      <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} border-b sticky top-16 z-30`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setSelectedCategory('all')}
-                className={`px-4 py-2 rounded-full transition ${
-                  selectedCategory === 'all'
-                    ? 'bg-blue-600 text-white'
-                    : darkMode 
-                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                Todos
-              </button>
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-full transition ${
-                    selectedCategory === cat
-                      ? 'bg-blue-600 text-white'
-                      : darkMode 
-                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-              {isAdmin && (
-                <button
-                  onClick={() => setShowCategoryModal(true)}
-                  className="px-4 py-2 bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition"
-                >
-                  + Categoria
-                </button>
-              )}
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded transition ${
-                  viewMode === 'grid' 
-                    ? 'bg-blue-100 text-blue-600' 
-                    : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
-                }`}
-              >
-                <Grid className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded transition ${
-                  viewMode === 'list' 
-                    ? 'bg-blue-100 text-blue-600' 
-                    : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
-                }`}
-              >
-                <List className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Botão Adicionar (Admin) */}
-      {isAdmin && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <button
-            onClick={() => {
-              setEditingBook(null);
-              setBookForm({
-                title: '',
-                author: '',
-                description: '',
-                price: '',
-                image: '',
-                category: '',
-                affiliateLink: ''
-              });
-              setShowBookModal(true);
-            }}
-            className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-          >
-            <Plus className="w-5 h-5" />
-            Adicionar Livro
-          </button>
-        </div>
-      )}
-
-      {/* Lista de Livros */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {filteredBooks.length === 0 ? (
-          <div className="text-center py-16">
-            <Book className={`w-16 h-16 ${darkMode ? 'text-gray-600' : 'text-gray-300'} mx-auto mb-4`} />
-            <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'} text-lg`}>
-              {searchQuery ? 'Nenhum livro encontrado com essa busca' : 'Nenhum livro encontrado'}
-            </p>
-            {isAdmin && !searchQuery && (
-              <p className={`${darkMode ? 'text-gray-500' : 'text-gray-400'} mt-2`}>Adicione seu primeiro livro!</p>
-            )}
-          </div>
-        ) : (
-          <div className={viewMode === 'grid' 
-            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
-            : 'space-y-4'
-          }>
-            {filteredBooks.map(book => (
-              <div
-                key={book.id}
-                onClick={() => setShowBookDetail(book)}
-                className={`${
-                  darkMode ? 'bg-gray-800 hover:bg-gray-750' : 'bg-white'
-                } rounded-xl shadow-sm hover:shadow-md transition overflow-hidden cursor-pointer ${
-                  viewMode === 'list' ? 'flex gap-4 p-4' : ''
-                }`}
-              >
-                {book.image && (
-                  <img
-                    src={book.image}
-                    alt={book.title}
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="300" viewBox="0 0 200 300"%3E%3Crect fill="%23ddd" width="200" height="300"/%3E%3Ctext x="50%25" y="50%25" font-size="18" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3ESem Imagem%3C/text%3E%3C/svg%3E';
-                    }}
-                    className={viewMode === 'list' 
-                      ? 'w-24 h-32 object-cover rounded flex-shrink-0'
-                      : 'w-full h-64 object-cover'
-                    }
-                  />
-                )}
-                <div className={viewMode === 'grid' ? 'p-4' : 'flex-1'} onClick={(e) => e.stopPropagation()}>
-                  <h3 className={`font-bold text-lg ${darkMode ? 'text-white' : 'text-gray-900'} mb-1 line-clamp-2`}>
-                    {book.title}
-                  </h3>
-                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-2`}>{book.author}</p>
-                  {book.description && (
-                    <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'} mb-3 line-clamp-3`}>
-                      {book.description}
-                    </p>
-                  )}
-                  {book.category && (
-                    <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full mb-3">
-                      {book.category}
-                    </span>
-                  )}
-                  {book.price && (
-                    <p className="text-xl font-bold text-green-600 mb-3">
-                      R$ {book.price}
-                    </p>
-                  )}
-                  <div className="flex gap-2">
-                    <a
-                      href={book.affiliateLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex-1 bg-orange-500 text-white text-center py-2 px-4 rounded-lg hover:bg-orange-600 transition font-medium"
-                    >
-                      Comprar na Amazon
-                    </a>
-                    {isAdmin && (
-                      <>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditBook(book);
-                          }}
-                          className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteBook(book.id);
-                          }}
-                          className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </>
-                    )}
-                  </div>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Páginas Infinitas - Livros Amazon</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .dark body {
+            background-color: #111827;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50 transition-colors">
+    
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-40" id="header">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                    <h1 class="text-2xl font-bold text-gray-900">Páginas Infinitas</h1>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </main>
-
-      {/* Footer */}
-      <footer className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} border-t mt-16`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className={`text-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            <p className="mb-2">
-              <strong>Aviso:</strong> Este site participa do Programa de Associados da Amazon, um programa de publicidade de afiliados criado para proporcionar aos sites um meio de obter receitas através da criação de links para a Amazon.
-            </p>
-            <p>Como Associado da Amazon, ganho com compras qualificadas.</p>
-          </div>
-        </div>
-      </footer>
-
-      {/* Modal Detalhes do Livro */}
-      {showBookDetail && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 max-w-2xl w-full my-8`}>
-            <div className="flex justify-between items-start mb-4">
-              <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} pr-4`}>
-                {showBookDetail.title}
-              </h2>
-              <button onClick={() => setShowBookDetail(null)} className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            {showBookDetail.image && (
-              <img
-                src={showBookDetail.image}
-                alt={showBookDetail.title}
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="300" viewBox="0 0 200 300"%3E%3Crect fill="%23ddd" width="200" height="300"/%3E%3Ctext x="50%25" y="50%25" font-size="18" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3ESem Imagem%3C/text%3E%3C/svg%3E';
-                }}
-                className="w-full max-h-96 object-contain rounded-lg mb-4"
-              />
-            )}
-
-            <p className={`text-lg ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-              <strong>Autor:</strong> {showBookDetail.author}
-            </p>
-
-            {showBookDetail.category && (
-              <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full mb-4">
-                {showBookDetail.category}
-              </span>
-            )}
-
-            {showBookDetail.description && (
-              <div className="mb-4">
-                <h3 className={`font-bold text-lg ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>Descrição</h3>
-                <p className={`${darkMode ? 'text-gray-300' : 'text-gray-700'} whitespace-pre-line`}>
-                  {showBookDetail.description}
-                </p>
-              </div>
-            )}
-
-            {showBookDetail.price && (
-              <p className="text-2xl font-bold text-green-600 mb-4">
-                R$ {showBookDetail.price}
-              </p>
-            )}
-
-            <a
-              href={showBookDetail.affiliateLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full bg-orange-500 text-white text-center py-3 px-4 rounded-lg hover:bg-orange-600 transition font-medium"
-            >
-              Comprar na Amazon
-            </a>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Login Admin */}
-      {showAdminModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Acesso Administrativo</h2>
-              <button onClick={() => setShowAdminModal(false)}>
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <input
-              type="password"
-              placeholder="Senha"
-              value={adminPassword}
-              onChange={(e) => setAdminPassword(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleAdminLogin()}
-              className="w-full px-4 py-2 border rounded-lg mb-4"
-            />
-            <button
-              onClick={handleAdminLogin}
-              className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
-            >
-              Entrar
-            </button>
-            <p className="text-xs text-gray-500 mt-4">
-              Senha padrão: admin123 (altere no código!)
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Gerenciar Categorias */}
-      {showCategoryModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full max-h-96 overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Gerenciar Categorias</h2>
-              <button onClick={() => setShowCategoryModal(false)}>
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="mb-4">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Nova categoria"
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
-                  className="flex-1 px-4 py-2 border rounded-lg"
-                />
-                <button
-                  onClick={handleAddCategory}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                >
-                  <Plus className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              {categories.map(cat => (
-                <div key={cat} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span>{cat}</span>
-                  <button
-                    onClick={() => handleDeleteCategory(cat)}
-                    className="p-1 text-red-600 hover:bg-red-100 rounded"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">
+                        <svg id="darkIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                        <svg id="lightIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                        </svg>
+                    </button>
+                    <button onclick="toggleAdmin()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        <span id="adminBtnText">Admin</span>
+                    </button>
                 </div>
-              ))}
             </div>
-          </div>
         </div>
-      )}
+    </header>
 
-      {/* Modal Adicionar/Editar Livro */}
-      {showBookModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl p-6 max-w-2xl w-full my-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">
-                {editingBook ? 'Editar Livro' : 'Adicionar Livro'}
-              </h2>
-              <button onClick={() => setShowBookModal(false)}>
-                <X className="w-5 h-5" />
-              </button>
+    <!-- Barra de Pesquisa -->
+    <div class="bg-white border-b" id="searchBar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="relative">
+                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <input type="text" id="searchInput" placeholder="Buscar por título, autor ou descrição..." 
+                    class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    oninput="filterBooks()">
             </div>
-
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Título *"
-                value={bookForm.title}
-                onChange={(e) => setBookForm({...bookForm, title: e.target.value})}
-                className="w-full px-4 py-2 border rounded-lg"
-              />
-              <input
-                type="text"
-                placeholder="Autor *"
-                value={bookForm.author}
-                onChange={(e) => setBookForm({...bookForm, author: e.target.value})}
-                className="w-full px-4 py-2 border rounded-lg"
-              />
-              <textarea
-                placeholder="Descrição"
-                value={bookForm.description}
-                onChange={(e) => setBookForm({...bookForm, description: e.target.value})}
-                className="w-full px-4 py-2 border rounded-lg h-24 resize-none"
-              />
-              <input
-                type="text"
-                placeholder="Preço (ex: 29.90)"
-                value={bookForm.price}
-                onChange={(e) => setBookForm({...bookForm, price: e.target.value})}
-                className="w-full px-4 py-2 border rounded-lg"
-              />
-              <input
-                type="text"
-                placeholder="URL da Imagem"
-                value={bookForm.image}
-                onChange={(e) => setBookForm({...bookForm, image: e.target.value})}
-                className="w-full px-4 py-2 border rounded-lg"
-              />
-              <select
-                value={bookForm.category}
-                onChange={(e) => setBookForm({...bookForm, category: e.target.value})}
-                className="w-full px-4 py-2 border rounded-lg"
-              >
-                <option value="">Selecione uma categoria</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-              <input
-                type="text"
-                placeholder="Link de Afiliado da Amazon *"
-                value={bookForm.affiliateLink}
-                onChange={(e) => setBookForm({...bookForm, affiliateLink: e.target.value})}
-                className="w-full px-4 py-2 border rounded-lg"
-              />
-              <button
-                onClick={handleSaveBook}
-                className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition"
-              >
-                <Save className="w-5 h-5" />
-                Salvar Livro
-              </button>
-            </div>
-          </div>
         </div>
-      )}
     </div>
-  );
-}
+
+    <!-- Filtros -->
+    <div class="bg-white border-b sticky top-16 z-30" id="filters">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                <div class="flex flex-wrap gap-2" id="categoryFilters"></div>
+                <div class="flex gap-2">
+                    <button onclick="setViewMode('grid')" id="gridBtn" class="p-2 rounded bg-blue-100 text-blue-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                        </svg>
+                    </button>
+                    <button onclick="setViewMode('list')" id="listBtn" class="p-2 rounded bg-gray-200 text-gray-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botão Adicionar (Admin) -->
+    <div id="adminControls" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <button onclick="openBookModal()" class="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Adicionar Livro
+        </button>
+    </div>
+
+    <!-- Lista de Livros -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div id="booksList"></div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t mt-16" id="footer">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="text-center text-sm text-gray-600">
+                <p class="mb-2">
+                    <strong>Aviso:</strong> Este site participa do Programa de Associados da Amazon, um programa de publicidade de afiliados criado para proporcionar aos sites um meio de obter receitas através da criação de links para a Amazon.
+                </p>
+                <p>Como Associado da Amazon, ganho com compras qualificadas.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal Login Admin -->
+    <div id="adminModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full">
+            <h2 class="text-xl font-bold mb-4">Acesso Administrativo</h2>
+            <input type="password" id="adminPassword" placeholder="Senha" 
+                class="w-full px-4 py-2 border rounded-lg mb-4"
+                onkeypress="if(event.key==='Enter') loginAdmin()">
+            <button onclick="loginAdmin()" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                Entrar
+            </button>
+            <p class="text-xs text-gray-500 mt-4">Senha padrão: admin123</p>
+        </div>
+    </div>
+
+    <!-- Modal Livro -->
+    <div id="bookModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-xl p-6 max-w-2xl w-full my-8">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold" id="bookModalTitle">Adicionar Livro</h2>
+                <button onclick="closeBookModal()" class="text-gray-600">✕</button>
+            </div>
+            <div class="space-y-4">
+                <input type="text" id="bookTitle" placeholder="Título *" class="w-full px-4 py-2 border rounded-lg">
+                <input type="text" id="bookAuthor" placeholder="Autor *" class="w-full px-4 py-2 border rounded-lg">
+                <textarea id="bookDescription" placeholder="Descrição" class="w-full px-4 py-2 border rounded-lg h-24 resize-none"></textarea>
+                <input type="text" id="bookPrice" placeholder="Preço (ex: 29.90)" class="w-full px-4 py-2 border rounded-lg">
+                <input type="text" id="bookImage" placeholder="URL da Imagem" class="w-full px-4 py-2 border rounded-lg">
+                <select id="bookCategory" class="w-full px-4 py-2 border rounded-lg">
+                    <option value="">Selecione uma categoria</option>
+                </select>
+                <input type="text" id="bookLink" placeholder="Link de Afiliado da Amazon *" class="w-full px-4 py-2 border rounded-lg">
+                <button onclick="saveBook()" class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition">
+                    Salvar Livro
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detalhes -->
+    <div id="detailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-xl p-6 max-w-2xl w-full my-8" id="detailContent"></div>
+    </div>
+
+    <script>
+        const ADMIN_PASS = 'admin123';
+        let isAdmin = false;
+        let viewMode = 'grid';
+        let selectedCategory = 'all';
+        let editingId = null;
+        let books = [];
+        let categories = ['Ficção', 'Não-Ficção', 'Técnico', 'Biografia'];
+
+        // Carregar dados
+        function loadData() {
+            const savedBooks = localStorage.getItem('paginasinfinitas_books');
+            const savedCategories = localStorage.getItem('paginasinfinitas_categories');
+            
+            if (savedBooks) books = JSON.parse(savedBooks);
+            if (savedCategories) categories = JSON.parse(savedCategories);
+            
+            renderBooks();
+            renderCategories();
+        }
+
+        // Salvar dados
+        function saveData() {
+            localStorage.setItem('paginasinfinitas_books', JSON.stringify(books));
+            localStorage.setItem('paginasinfinitas_categories', JSON.stringify(categories));
+        }
+
+        // Dark Mode
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            document.body.classList.toggle('bg-gray-900');
+            document.getElementById('darkIcon').classList.toggle('hidden');
+            document.getElementById('lightIcon').classList.toggle('hidden');
+            updateDarkMode();
+        }
+
+        function updateDarkMode() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const elements = {
+                header: document.getElementById('header'),
+                searchBar: document.getElementById('searchBar'),
+                filters: document.getElementById('filters'),
+                footer: document.getElementById('footer')
+            };
+            
+            Object.values(elements).forEach(el => {
+                if (isDark) {
+                    el.classList.remove('bg-white');
+                    el.classList.add('bg-gray-800');
+                } else {
+                    el.classList.remove('bg-gray-800');
+                    el.classList.add('bg-white');
+                }
+            });
+        }
+
+        // Admin
+        function toggleAdmin() {
+            if (isAdmin) {
+                isAdmin = false;
+                document.getElementById('adminBtnText').textContent = 'Admin';
+                document.getElementById('adminControls').classList.add('hidden');
+                renderBooks();
+            } else {
+                document.getElementById('adminModal').classList.remove('hidden');
+            }
+        }
+
+        function loginAdmin() {
+            const pass = document.getElementById('adminPassword').value;
+            if (pass === ADMIN_PASS) {
+                isAdmin = true;
+                document.getElementById('adminBtnText').textContent = 'Sair';
+                document.getElementById('adminModal').classList.add('hidden');
+                document.getElementById('adminPassword').value = '';
+                document.getElementById('adminControls').classList.remove('hidden');
+                renderBooks();
+            } else {
+                alert('Senha incorreta!');
+            }
+        }
+
+        // View Mode
+        function setViewMode(mode) {
+            viewMode = mode;
+            document.getElementById('gridBtn').className = mode === 'grid' ? 'p-2 rounded bg-blue-100 text-blue-600' : 'p-2 rounded bg-gray-200 text-gray-600';
+            document.getElementById('listBtn').className = mode === 'list' ? 'p-2 rounded bg-blue-100 text-blue-600' : 'p-2 rounded bg-gray-200 text-gray-600';
+            renderBooks();
+        }
+
+        // Categorias
+        function renderCategories() {
+            const container = document.getElementById('categoryFilters');
+            container.innerHTML = `
+                <button onclick="filterByCategory('all')" class="${selectedCategory === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} px-4 py-2 rounded-full transition">
+                    Todos
+                </button>
+            `;
+            categories.forEach(cat => {
+                container.innerHTML += `
+                    <button onclick="filterByCategory('${cat}')" class="${selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} px-4 py-2 rounded-full transition">
+                        ${cat}
+                    </button>
+                `;
+            });
+
+            // Atualizar select do modal
+            const select = document.getElementById('bookCategory');
+            select.innerHTML = '<option value="">Selecione uma categoria</option>';
+            categories.forEach(cat => {
+                select.innerHTML += `<option value="${cat}">${cat}</option>`;
+            });
+        }
+
+        function filterByCategory(cat) {
+            selectedCategory = cat;
+            renderCategories();
+            filterBooks();
+        }
+
+        // Filtrar livros
+        function filterBooks() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = books.filter(book => {
+                const matchesCategory = selectedCategory === 'all' || book.category === selectedCategory;
+                const matchesSearch = !search || 
+                    book.title.toLowerCase().includes(search) ||
+                    book.author.toLowerCase().includes(search) ||
+                    (book.description && book.description.toLowerCase().includes(search));
+                return matchesCategory && matchesSearch;
+            });
+            renderBooks(filtered);
+        }
+
+        // Renderizar livros
+        function renderBooks(booksToShow = null) {
+            const filtered = booksToShow || books.filter(b => selectedCategory === 'all' || b.category === selectedCategory);
+            const container = document.getElementById('booksList');
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-16">
+                        <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                        <p class="text-gray-500 text-lg">Nenhum livro encontrado</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.className = viewMode === 'grid' 
+                ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+                : 'space-y-4';
+            
+            container.innerHTML = filtered.map(book => `
+                <div onclick="showDetail(${book.id})" class="bg-white rounded-xl shadow-sm hover:shadow-md transition overflow-hidden cursor-pointer ${viewMode === 'list' ? 'flex gap-4 p-4' : ''}">
+                    ${book.image ? `
+                        <img src="${book.image}" alt="${book.title}" crossorigin="anonymous" 
+                            class="${viewMode === 'list' ? 'w-24 h-32 object-cover rounded flex-shrink-0' : 'w-full h-64 object-cover'}">
+                    ` : `
+                        <div class="${viewMode === 'list' ? 'w-24 h-32' : 'w-full h-64'} bg-gray-200 flex items-center justify-center">
+                            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                            </svg>
+                        </div>
+                    `}
+                    <div class="${viewMode === 'grid' ? 'p-4' : 'flex-1'}">
+                        <h3 class="font-bold text-lg text-gray-900 mb-1 line-clamp-2">${book.title}</h3>
+                        <p class="text-sm text-gray-600 mb-2">${book.author}</p>
+                        ${book.description ? `<p class="text-sm text-gray-500 mb-3 line-clamp-3">${book.description}</p>` : ''}
+                        ${book.category ? `<span class="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full mb-3">${book.category}</span>` : ''}
+                        ${book.price ? `<p class="text-xl font-bold text-green-600 mb-3">R$ ${book.price}</p>` : ''}
+                        <div class="flex gap-2" onclick="event.stopPropagation()">
+                            <a href="${book.affiliateLink}" target="_blank" rel="noopener noreferrer"
+                                class="flex-1 bg-orange-500 text-white text-center py-2 px-4 rounded-lg hover:bg-orange-600 transition font-medium">
+                                Comprar na Amazon
+                            </a>
+                            ${isAdmin ? `
+                                <button onclick="editBook(${book.id})" class="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    </svg>
+                                </button>
+                                <button onclick="deleteBook(${book.id})" class="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Modal Livro
+        function openBookModal() {
+            editingId = null;
+            document.getElementById('bookModalTitle').textContent = 'Adicionar Livro';
+            document.getElementById('bookTitle').value = '';
+            document.getElementById('bookAuthor').value = '';
+            document.getElementById('bookDescription').value = '';
+            document.getElementById('bookPrice').value = '';
+            document.getElementById('bookImage').value = '';
+            document.getElementById('bookCategory').value = '';
+            document.getElementById('bookLink').value = '';
+            document.getElementById('bookModal').classList.remove('hidden');
+        }
+
+        function closeBookModal() {
+            document.getElementById('bookModal').classList.add('hidden');
+        }
+
+        function editBook(id) {
+            const book = books.find(b => b.id === id);
+            if (!book) return;
+            
+            editingId = id;
+            document.getElementById('bookModalTitle').textContent = 'Editar Livro';
+            document.getElementById('bookTitle').value = book.title;
+            document.getElementById('bookAuthor').value = book.author;
+            document.getElementById('bookDescription').value = book.description || '';
+            document.getElementById('bookPrice').value = book.price || '';
+            document.getElementById('bookImage').value = book.image || '';
+            document.getElementById('bookCategory').value = book.category || '';
+            document.getElementById('bookLink').value = book.affiliateLink;
+            document.getElementById('bookModal').classList.remove('hidden');
+        }
+
+        function saveBook() {
+            const title = document.getElementById('bookTitle').value;
+            const author = document.getElementById('bookAuthor').value;
+            const link = document.getElementById('bookLink').value;
+            
+            if (!title || !author || !link) {
+                alert('Preencha pelo menos título, autor e link de afiliado!');
+                return;
+            }
+
+            const book = {
+                id: editingId || Date.now(),
+                title,
+                author,
+                description: document.getElementById('bookDescription').value,
+                price: document.getElementById('bookPrice').value,
+                image: document.getElementById('bookImage').value,
+                category: document.getElementById('bookCategory').value,
+                affiliateLink: link
+            };
+
+            if (editingId) {
+                books = books.map(b => b.id === editingId ? book : b);
+            } else {
+                books.push(book);
+            }
+
+            saveData();
+            closeBookModal();
+            renderBooks();
+        }
+
+        function deleteBook(id) {
+            if (confirm('Excluir este livro?')) {
+                books = books.filter(b => b.id !== id);
+                saveData();
+                renderBooks();
+            }
+        }
+
+        // Modal Detalhes
+        function showDetail(id) {
+            const book = books.find(b => b.id === id);
+            if (!book) return;
+            
+            document.getElementById('detailContent').innerHTML = `
+                <div class="flex justify-between items-start mb-4">
+                    <h2 class="text-2xl font-bold text-gray-900 pr-4">${book.title}</h2>
+                    <button onclick="closeDetail()" class="text-gray-600">✕</button>
+                </div>
+                ${book.image ? `
+                    <div class="w-full max-h-96 flex justify-center bg-gray-100 rounded-lg p-4 mb-4">
+                        <img src="${book.image}" alt="${book.title}" crossorigin="anonymous" class="max-w-full max-h-96 object-contain rounded-lg">
+                    </div>
+                ` : ''}
+                <p class="text-lg text-gray-700 mb-2"><strong>Autor:</strong> ${book.author}</p>
+                ${book.category ? `<span class="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full mb-4">${book.category}</span>` : ''}
+                ${book.description ? `
+                    <div class="mb-4">
+                        <h3 class="font-bold text-lg text-gray-900 mb-2">Descrição</h3>
+                        <p class="text-gray-700 whitespace-pre-line">${book.description}</p>
+                    </div>
+                ` : ''}
+                ${book.price ? `<p class="text-2xl font-bold text-green-600 mb-4">R$ ${book.price}</p>` : ''}
+                <a href="${book.affiliateLink}" target="_blank" rel="noopener noreferrer"
+                    class="block w-full bg-orange-500 text-white text-center py-3 px-4 rounded-lg hover:bg-orange-600 transition font-medium">
+                    Comprar na Amazon
+                </a>
+            `;
+            document.getElementById('detailModal').classList.remove('hidden');
+        }
+
+        function closeDetail() {
+            document.getElementById('detailModal').classList.add('hidden');
+        }
+
+        // Inicializar
+        loadData();
+        if (books.length === 0) {
+            books = [{
+                id: Date.now(),
+                title: "Livro de Exemplo",
+                author: "Autor Exemplo",
+                description: "Este é um livro de exemplo. Entre como admin para adicionar seus próprios livros!",
+                price: "29.90",
+                image: "https://m.media-amazon.com/images/I/61h7Y-shOZL._SL1303_.jpg",
+                category: "Ficção",
+                affiliateLink: "https://amazon.com.br"
+            }];
+            saveData();
+            renderBooks();
+        }
+    </script>
+</body>
+</html>
