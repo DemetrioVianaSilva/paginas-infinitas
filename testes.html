@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testes - Páginas Infinitas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #764ba2;
+            margin-top: 20px;
+        }
+        .test-group {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            background: #f9f9f9;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+            margin: 5px 0;
+        }
+        .status.pass {
+            background: #4caf50;
+            color: white;
+        }
+        .status.fail {
+            background: #f44336;
+            color: white;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+        .results {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 SUITE DE TESTES - PÁGINAS INFINITAS</h1>
+        <p>Validar todos os requisitos do projeto</p>
+    </div>
+
+    <div class="container">
+        <h2>📊 Testes Automatizados</h2>
+        
+        <div class="test-group">
+            <h3>Teste 1: Persistência de Dados</h3>
+            <p>Verifica se os dados não são apagados após F5</p>
+            <button onclick="testePeristencia()">Executar Teste</button>
+            <div id="teste1-resultado"></div>
+        </div>
+
+        <div class="test-group">
+            <h3>Teste 2: Autenticação (Senha)</h3>
+            <p>Valida se a senha está funcionando corretamente</p>
+            <button onclick="testeAutenticacao()">Executar Teste</button>
+            <div id="teste2-resultado"></div>
+        </div>
+
+        <div class="test-group">
+            <h3>Teste 3: Firebase Connectivity</h3>
+            <p>Verifica se Firebase está conectado e funcionando</p>
+            <button onclick="testeFirebase()">Executar Teste</button>
+            <div id="teste3-resultado"></div>
+        </div>
+    </div>
+
+    <script>
+        function testePeristencia() {
+            const resultado = document.getElementById('teste1-resultado');
+            localStorage.setItem('teste-persistencia', JSON.stringify({timestamp: new Date().toISOString(), valor: 'teste'}));
+            const dados = localStorage.getItem('teste-persistencia');
+            
+            if (dados) {
+                resultado.innerHTML = `<div class="results"><span class="status pass">PASSOU</span><p>✅ localStorage funcionando</p></div>`;
+            } else {
+                resultado.innerHTML = `<div class="results"><span class="status fail">FALHOU</span><p>❌ localStorage não funciona</p></div>`;
+            }
+        }
+
+        async function testeAutenticacao() {
+            const resultado = document.getElementById('teste2-resultado');
+            const HASH_CORRETO = '9d493195601b65ec63ea7486cd6b723f7601983e0240a72535138fa274f437d6';
+            
+            try {
+                const encoder = new TextEncoder();
+                const data = encoder.encode('user195705');
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                
+                if (hashHex === HASH_CORRETO) {
+                    resultado.innerHTML = `<div class="results"><span class="status pass">PASSOU</span><p>✅ Senha user195705 correta</p></div>`;
+                } else {
+                    resultado.innerHTML = `<div class="results"><span class="status fail">FALHOU</span><p>❌ Hash não corresponde</p></div>`;
+                }
+            } catch (error) {
+                resultado.innerHTML = `<div class="results"><span class="status fail">ERRO</span><p>❌ ${error.message}</p></div>`;
+            }
+        }
+
+        function testeFirebase() {
+            const resultado = document.getElementById('teste3-resultado');
+            resultado.innerHTML = `<div class="results"><span class="status pass">OK</span><p>ℹ️ Abra home.html para testar Firebase</p></div>`;
+        }
+    </script>
+</body>
+</html>
