@@ -1,5 +1,3 @@
-// Arquivo muito grande - vou criar a função serverless para DALL-E
-// api/generate-image.js
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
@@ -20,7 +18,7 @@ export default async function handler(req, res) {
                 model: "dall-e-3",
                 prompt: `Create a vibrant, professional Instagram story background image about: ${prompt}. Style: modern, eye-catching, suitable for text overlay. No text in image.`,
                 n: 1,
-                size: "1024x1792", // Portrait 9:16
+                size: "1024x1792",
                 quality: "standard"
             })
         });
@@ -49,3 +47,24 @@ export default async function handler(req, res) {
         });
     }
 }
+```
+
+---
+
+## ⚡ DEPOIS DE CRIAR OS ARQUIVOS:
+
+### **Adicionar API Keys no Vercel:**
+
+1. Acesse: https://vercel.com
+2. Selecione projeto `paginas-infinitas`
+3. **Settings** → **Environment Variables**
+4. Adicione:
+```
+Name: ANTHROPIC_API_KEY
+Value: sk-ant-api03-xxxxxxxxxxxxx
+Environment: Production, Preview, Development ✓
+```
+```
+Name: OPENAI_API_KEY  
+Value: sk-xxxxxxxxxxxxxxxxxxxxx
+Environment: Production, Preview, Development ✓
