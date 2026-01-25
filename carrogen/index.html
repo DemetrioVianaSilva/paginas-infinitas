@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>CarroGEN Ultra - Gerador de Carrosséis Virais</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #141414;
+            --bg-tertiary: #1e1e1e;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent: #00d9ff;
+            --accent-glow: rgba(0, 217, 255, 0.3);
+            --border: #2a2a2a;
+        }
+
+        body {
+            font-family: 'Manrope', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 217, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(138, 43, 226, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 40% 90%, rgba(255, 0, 128, 0.05) 0%, transparent 50%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        header {
+            padding: 40px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 48px;
+        }
+
+        .logo {
+            font-family: 'Syne', sans-serif;
+            font-size: 42px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), #8a2be2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        .tagline {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            letter-spacing: 0.05em;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-top: 12px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 32px;
+            margin-bottom: 48px;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 32px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover {
+            border-color: rgba(0, 217, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 217, 255, 0.1);
+        }
+
+        .card-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(180deg, var(--accent), #8a2be2);
+            border-radius: 2px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .form-input::placeholder {
+            color: #666;
+        }
+
+        .color-strip {
+            height: 50px;
+            border-radius: 12px;
+            background: linear-gradient(
+                90deg,
+                #667eea 0%,
+                #764ba2 10%,
+                #f093fb 20%,
+                #f5576c 30%,
+                #4facfe 40%,
+                #00f2fe 50%,
+                #43e97b 60%,
+                #38f9d7 70%,
+                #fa709a 80%,
+                #fee140 90%,
+                #ffd89b 100%
+            );
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .color-selector {
+            position: absolute;
+            width: 6px;
+            height: 100%;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5), 0 0 0 2px black;
+            cursor: ew-resize;
+            transition: transform 0.1s;
+        }
+
+        .color-preview {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 10px;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+        }
+
+        .color-swatch {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 2px solid var(--border);
+        }
+
+        .color-name {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .color-hex {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-family: 'Courier New', monospace;
+        }
+
+        .styles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .style-btn {
+            padding: 14px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .style-btn:hover {
+            border-color: var(--accent);
+        }
+
+        .style-btn.active {
+            background: rgba(0, 217, 255, 0.15);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .btn-generate {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, var(--accent), #8a2be2);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 17px;
+            font-weight: 800;
+            font-family: 'Syne', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-generate::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-generate:hover::before {
+            left: 100%;
+        }
+
+        .btn-generate:active {
+            transform: scale(0.98);
+        }
+
+        .btn-generate:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 24px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .slide-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 14px;
+            transition: all 0.3s;
+        }
+
+        .slide-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .slide-number {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .btn-download {
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            padding: 5px 10px;
+            border-radius: 8px;
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-download:hover {
+            background: rgba(0, 217, 255, 0.2);
+        }
+
+        .slide-canvas {
+            aspect-ratio: 9/16;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .slide-text {
+            text-align: center;
+            font-weight: 800;
+            line-height: 1.15;
+            z-index: 2;
+            position: relative;
+            text-shadow: 0 3px 25px rgba(0, 0, 0, 0.6);
+            word-wrap: break-word;
+            color: white;
+        }
+
+        .slide-counter {
+            position: absolute;
+            bottom: 14px;
+            right: 14px;
+            font-size: 13px;
+            font-weight: 700;
+            opacity: 0.7;
+            z-index: 2;
+            color: white;
+        }
+
+        .actions-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            flex: 1;
+            min-width: 180px;
+            padding: 14px 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-action:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--accent);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .alert {
+            background: rgba(255, 200, 0, 0.1);
+            border: 1px solid rgba(255, 200, 0, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Estilos especiais para cada template */
+        .style-polemica .slide-text {
+            font-size: 38px !important;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+        }
+
+        .style-luxo .slide-text {
+            font-size: 36px !important;
+            font-family: 'Georgia', serif;
+            letter-spacing: 0.05em;
+        }
+
+        .style-minimal .slide-text {
+            font-size: 32px !important;
+            font-weight: 600;
+        }
+
+        .style-urgente .slide-text {
+            font-size: 35px !important;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        .style-print .slide-text {
+            font-size: 28px !important;
+            font-weight: 600;
+            text-align: left;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .preview-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+    
+    <div class="container">
+        <header>
+            <div class="logo">CarroGEN Ultra</div>
+            <div class="tagline">Gerador Profissional de Carrosséis Virais com IA</div>
+            <div class="badge">🚀 VERSÃO COMPLETA</div>
+        </header>
+
+        <div id="inputSection">
+            <div class="alert">
+                <strong>🎯 Novas Funcionalidades:</strong><br>
+                • Quantidade personalizável de slides (3-20)<br>
+                • Nicho totalmente livre<br>
+                • Imagens automáticas do Unsplash<br>
+                • 5 estilos virais profissionais
+            </div>
+
+            <div class="main-grid">
+                <div class="card">
+                    <h2 class="card-title">Configurações do Carrossel</h2>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Quantidade de Slides</label>
+                            <input 
+                                type="number" 
+                                class="form-input" 
+                                id="slidesCount" 
+                                min="3" 
+                                max="20" 
+                                value="10"
+                                placeholder="De 3 a 20 slides"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Nicho (Predefinido)</label>
+                            <select class="form-select" id="nicheSelect">
+                                <option value="">Ou use nicho personalizado abaixo ↓</option>
+                                <option value="Finanças Pessoais">Finanças Pessoais</option>
+                                <option value="Investimentos">Investimentos</option>
+                                <option value="Criptomoedas">Criptomoedas</option>
+                                <option value="Renda Fixa">Renda Fixa</option>
+                                <option value="Ações">Ações</option>
+                                <option value="Fundos Imobiliários">Fundos Imobiliários</option>
+                                <option value="Educação Financeira">Educação Financeira</option>
+                                <option value="Empreendedorismo">Empreendedorismo</option>
+                                <option value="Marketing Digital">Marketing Digital</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Nicho Personalizado (Opcional)</label>
+                        <input 
+                            type="text" 
+                            class="form-input"
+                            id="customNiche"
+                            placeholder="Ex: Nutrição comportamental, Estética, Concursos públicos, Desenvolvimento pessoal..."
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tema do Carrossel</label>
+                        <input 
+                            type="text" 
+                            class="form-input"
+                            id="topicInput"
+                            placeholder="Ex: 5 erros que impedem você de lucrar com Bitcoin"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Estilo Visual</label>
+                        <div class="styles-grid">
+                            <button class="style-btn active" data-style="default">Padrão</button>
+                            <button class="style-btn" data-style="polemica">🔥 Polêmica</button>
+                            <button class="style-btn" data-style="luxo">💎 Luxo</button>
+                            <button class="style-btn" data-style="minimal">✨ Minimal</button>
+                            <button class="style-btn" data-style="urgente">🚨 Urgente</button>
+                            <button class="style-btn" data-style="print">💬 Print</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Gradiente de Cor</label>
+                        <div class="color-strip" id="colorStrip">
+                            <div class="color-selector" id="colorSelector"></div>
+                        </div>
+                        <div class="color-preview">
+                            <div class="color-swatch" id="colorSwatch"></div>
+                            <div>
+                                <div class="color-name" id="colorName">Roxo Vibrante</div>
+                                <div class="color-hex" id="colorHex">#667eea → #764ba2</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn-generate" id="generateBtn">
+                        🤖 Gerar Carrossel Viral
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="hidden" id="loadingSection">
+            <div class="card">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <div style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">
+                        Gerando carrossel...
+                    </div>
+                    <div style="color: var(--text-secondary);">
+                        Criando slides virais otimizados
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hidden" id="previewSection">
+            <div class="actions-bar">
+                <button class="btn-action" id="downloadAllBtn">📥 Screenshots</button>
+                <button class="btn-action" id="newCarouselBtn">+ Novo</button>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title" id="previewTitle">Seus Slides</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 32px; font-size: 14px;" id="previewMeta"></p>
+                <div class="preview-grid" id="previewGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000'; // Mude para sua URL do Vercel/Netlify
+
+        const colorGradients = [
+            { name: 'Roxo Vibrante', start: '#667eea', end: '#764ba2' },
+            { name: 'Roxo Escuro', start: '#5a4fcf', end: '#6b3bb3' },
+            { name: 'Rosa Energia', start: '#f093fb', end: '#f5576c' },
+            { name: 'Rosa Suave', start: '#ff9a9e', end: '#fecfef' },
+            { name: 'Azul Oceano', start: '#4facfe', end: '#00f2fe' },
+            { name: 'Azul Elétrico', start: '#2196f3', end: '#00bcd4' },
+            { name: 'Verde Menta', start: '#43e97b', end: '#38f9d7' },
+            { name: 'Verde Limão', start: '#84fab0', end: '#8fd3f4' },
+            { name: 'Laranja Sunset', start: '#fa709a', end: '#fee140' },
+            { name: 'Dourado', start: '#ffd89b', end: '#19547b' }
+        ];
+
+        let state = {
+            selectedColor: colorGradients[0],
+            selectedStyle: 'default',
+            topic: '',
+            niche: '',
+            slidesCount: 10,
+            slides: [],
+            carousels: []
+        };
+
+        // Color picker
+        const colorStrip = document.getElementById('colorStrip');
+        const colorSelector = document.getElementById('colorSelector');
+        const colorSwatch = document.getElementById('colorSwatch');
+        const colorName = document.getElementById('colorName');
+        const colorHex = document.getElementById('colorHex');
+
+        let isDragging = false;
+
+        colorSelector.style.left = '0%';
+        updateColorPreview(0);
+
+        colorStrip.addEventListener('mousedown', startDrag);
+        colorStrip.addEventListener('touchstart', startDrag);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('touchmove', drag);
+        document.addEventListener('mouseup', stopDrag);
+        document.addEventListener('touchend', stopDrag);
+
+        function startDrag(e) {
+            isDragging = true;
+            updatePosition(e);
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            updatePosition(e);
+        }
+
+        function stopDrag() {
+            isDragging = false;
+        }
+
+        function updatePosition(e) {
+            const rect = colorStrip.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            let x = clientX - rect.left;
+            x = Math.max(0, Math.min(x, rect.width));
+            const percentage = (x / rect.width) * 100;
+            colorSelector.style.left = percentage + '%';
+            updateColorPreview(percentage);
+        }
+
+        function updateColorPreview(percentage) {
+            const index = Math.floor((percentage / 100) * (colorGradients.length - 1));
+            const gradient = colorGradients[Math.min(index, colorGradients.length - 1)];
+            state.selectedColor = gradient;
+            
+            colorSwatch.style.background = `linear-gradient(135deg, ${gradient.start}, ${gradient.end})`;
+            colorName.textContent = gradient.name;
+            colorHex.textContent = `${gradient.start} → ${gradient.end}`;
+        }
+
+        // Style selector
+        document.querySelectorAll('.style-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.selectedStyle = btn.dataset.style;
+            });
+        });
+
+        // Generate
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+            const nicheSelect = document.getElementById('nicheSelect').value;
+            const customNiche = document.getElementById('customNiche').value.trim();
+            const niche = customNiche || nicheSelect;
+            const topic = document.getElementById('topicInput').value.trim();
+            const slidesCount = parseInt(document.getElementById('slidesCount').value || "10", 10);
+
+            if (!topic || !niche) {
+                alert('⚠️ Por favor, preencha o nicho e o tema!');
+                return;
+            }
+
+            if (slidesCount < 3 || slidesCount > 20) {
+                alert('⚠️ A quantidade deve ser entre 3 e 20 slides!');
+                return;
+            }
+
+            state.topic = topic;
+            state.niche = niche;
+            state.slidesCount = slidesCount;
+
+            showLoading();
+
+            // Simular geração (substitua com chamada real à API)
+            setTimeout(() => {
+                state.slides = generateMockSlides(topic, niche, slidesCount);
+                showPreview();
+            }, 2000);
+        });
+
+        function generateMockSlides(topic, niche, count) {
+            const templates = [
+                'Você está fazendo tudo errado',
+                'Erro fatal que 90% cometem',
+                'A verdade que ninguém te conta',
+                'Método comprovado e testado',
+                'Como aplicar isso hoje mesmo',
+                'Resultados em 30 dias ou menos',
+                'Isso mudou completamente tudo',
+                'Segredo que escondem de você',
+                'Salve este post agora',
+                'Comente "QUERO" para mais',
+                'Isso vai explodir sua mente',
+                'Pare de perder tempo com isso',
+                'O truque que mudou meu jogo',
+                'Ninguém fala sobre isso',
+                'A estratégia que funciona',
+                'Você precisa ver isso AGORA',
+                'Resultado em 7 dias',
+                'Sistema completo revelado',
+                'Compartilhe com quem precisa',
+                'Transforme isso em resultado'
+            ];
+
+            const slides = [`${topic.substring(0, 50)}...`];
+            for (let i = 1; i < count; i++) {
+                slides.push(templates[i % templates.length]);
+            }
+            return slides;
+        }
+
+        function getUnsplashUrl(query, index) {
+            const keywords = `${state.niche} ${state.topic} ${index}`.toLowerCase();
+            const q = encodeURIComponent(keywords);
+            return `https://source.unsplash.com/1080x1920/?${q}`;
+        }
+
+        function showLoading() {
+            document.getElementById('inputSection').classList.add('hidden');
+            document.getElementById('loadingSection').classList.remove('hidden');
+        }
+
+        function showPreview() {
+            document.getElementById('loadingSection').classList.add('hidden');
+            document.getElementById('previewSection').classList.remove('hidden');
+            
+            document.getElementById('previewTitle').textContent = state.topic;
+            document.getElementById('previewMeta').textContent = 
+                `${state.niche} • ${state.slides.length} slides • ${state.selectedColor.name} • Estilo: ${state.selectedStyle}`;
+
+            const grid = document.getElementById('previewGrid');
+            grid.innerHTML = state.slides.map((text, index) => {
+                const fontSize = text.length > 60 ? '22px' : text.length > 40 ? '28px' : text.length > 25 ? '34px' : '40px';
+                const imgUrl = getUnsplashUrl(state.topic, index);
+                
+                return `
+                    <div class="slide-card">
+                        <div class="slide-header">
+                            <span class="slide-number">Slide ${index + 1}</span>
+                            <button class="btn-download" onclick="alert('📸 Faça screenshot!')">📥</button>
+                        </div>
+                        <div class="slide-canvas style-${state.selectedStyle}" style="
+                            background-image:
+                                linear-gradient(135deg, 
+                                    ${state.selectedColor.start}cc, 
+                                    ${state.selectedColor.end}cc),
+                                url('${imgUrl}');
+                        ">
+                            <div class="slide-text" style="font-size: ${fontSize};">
+                                ${text}
+                            </div>
+                            <div class="slide-counter">
+                                ${index + 1}/${state.slides.length}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        document.getElementById('downloadAllBtn').addEventListener('click', () => {
+            alert('💡 Faça screenshots de cada slide!\n\n📸 Use o botão de screenshot do seu celular para salvar em alta qualidade.');
+        });
+
+        document.getElementById('newCarouselBtn').addEventListener('click', () => {
+            document.getElementById('topicInput').value = '';
+            document.getElementById('customNiche').value = '';
+            state.slides = [];
+            document.getElementById('previewSection').classList.add('hidden');
+            document.getElementById('inputSection').classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>
