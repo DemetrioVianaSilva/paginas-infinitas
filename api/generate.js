@@ -1,50 +1,105 @@
-// Arquivo muito grande - vou criar a função serverless para DALL-E
-// api/generate-image.js
+// api/generate.js - Função Serverless para Vercel
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
     try {
-        const { prompt, slideText } = req.body;
+        const { topic, niche, slidesCount } = req.body;
 
-        console.log(`🎨 Gerando imagem com DALL-E: ${prompt}`);
+        if (!topic || !niche || !slidesCount) {
+            return res.status(400).json({ 
+                error: 'Campos obrigatórios: topic, niche, slidesCount' 
+            });
+        }
 
-        const response = await fetch('https://api.openai.com/v1/images/generations', {
+        if (slidesCount < 3 || slidesCount > 20) {
+            return res.status(400).json({ 
+                error: 'slidesCount deve ser entre 3 e 20' 
+            });
+        }
+
+        console.log(`🎯 Gerando ${slidesCount} slides: "${topic}" (${niche})`);
+
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+                'x-api-key': process.env.ANTHROPIC_API_KEY,
+                'anthropic-version': '2023-06-01'
             },
             body: JSON.stringify({
-                model: "dall-e-3",
-                prompt: `Create a vibrant, professional Instagram story background image about: ${prompt}. Style: modern, eye-catching, suitable for text overlay. No text in image.`,
-                n: 1,
-                size: "1024x1792", // Portrait 9:16
-                quality: "standard"
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 2000,
+                messages: [{
+                    role: 'user',
+                    content: `Você é um especialista em criação de conteúdo viral para Instagram, com foco em carrosséis que geram alto engajamento.
+
+Crie um carrossel de ${slidesCount} slides sobre "${topic}" no nicho de "${niche}".
+
+INSTRUÇÕES CRÍTICAS:
+1. Crie EXATAMENTE ${slidesCount} slides
+2. Cada slide deve ter entre 5-15 palavras (máximo absoluto!)
+3. Use linguagem EXTREMAMENTE direta, impactante e emocional
+4. Slide 1: Hook DEVASTADOR que gera curiosidade incontrolável
+5. Slides intermediários: Insights valiosos, práticos e surpreendentes
+6. Último slide: CTA forte e fechamento memorável
+7. Use números específicos, dados concretos e contrastes dramáticos
+8. Evite clichês e textos genéricos - seja ESPECÍFICO e ÚNICO
+9. Foque em criar FOMO (fear of missing out)
+10. Use palavras de poder: "erro", "segredo", "verdade", "nunca", "sempre"
+
+FORMATO DE RESPOSTA (APENAS ISSO, SEM NENHUMA EXPLICAÇÃO):
+SLIDE 1: [texto curto e impactante]
+SLIDE 2: [texto curto e impactante]
+SLIDE 3: [texto curto e impactante]
+...
+SLIDE ${slidesCount}: [texto curto e impactante]
+
+EXEMPLOS DO QUE FUNCIONA:
+✅ "97% dos investidores cometem este erro fatal"
+✅ "R$ 10k/mês em 6 meses - método completo"
+✅ "Você está perdendo dinheiro agora mesmo"
+
+Seja impactante, específico e memorável em CADA SLIDE!`
+                }]
             })
         });
 
         if (!response.ok) {
-            throw new Error(`OpenAI API error: ${response.status}`);
+            const errorData = await response.json();
+            console.error('❌ Erro na API do Claude:', errorData);
+            throw new Error(`API Error: ${response.status}`);
         }
 
         const data = await response.json();
-        const imageUrl = data.data[0].url;
+        const content = data.content[0].text;
+        
+        const slideTexts = content
+            .split('\n')
+            .filter(line => line.trim().startsWith('SLIDE'))
+            .map(line => line.replace(/SLIDE \d+:\s*/, '').trim())
+            .filter(text => text.length > 0);
 
-        console.log(`✅ Imagem gerada com sucesso!`);
+        if (slideTexts.length < slidesCount - 2) {
+            throw new Error(`Slides insuficientes gerados: ${slideTexts.length}`);
+        }
+
+        console.log(`✅ Sucesso! ${slideTexts.length} slides gerados`);
 
         res.status(200).json({
             success: true,
-            imageUrl,
-            prompt,
+            slides: slideTexts,
+            topic,
+            niche,
+            slidesCount: slideTexts.length,
             timestamp: new Date().toISOString()
         });
 
     } catch (error) {
-        console.error('❌ Erro ao gerar imagem:', error);
+        console.error('❌ Erro ao gerar carrossel:', error);
         res.status(500).json({ 
-            error: 'Erro ao gerar imagem',
+            error: 'Erro ao gerar carrossel',
             message: error.message 
         });
     }
